@@ -11,3 +11,8 @@ Place raw data in:
 data/raw/
 
 Processed outputs will be auto-generated.
+
+
+#for alarm install alarm.wav and place in assets/
+ use alerts/ where you can store the intrusive images
+ 

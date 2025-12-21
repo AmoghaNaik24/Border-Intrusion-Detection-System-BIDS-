@@ -19,6 +19,8 @@ conda-env/
 # ======================
 data/
 datasets/
+alerts/
+assets/
 
 # ======================
 # Model Weights

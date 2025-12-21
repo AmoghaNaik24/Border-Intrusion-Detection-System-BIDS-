@@ -3,20 +3,18 @@ from modules.object_detection.yolo_detector import run_object_detection
 from modules.face_detection.face_detector import detect_and_extract_faces
 from modules.face_recognition.face_recognizer import recognize_faces
 
-def run_pipeline():
-    print("\n=== PHASE 1: Motion Detection ===")
-    run_motion_detection()
+print("=============================")
+print(" SMART BORDER SECURITY SYSTEM")
+print("=============================")
 
-    print("\n=== PHASE 2: Object Detection ===")
-    run_object_detection()
+while True:
+    motion = run_motion_detection()
 
-    print("\n=== PHASE 3: Face Detection ===")
-    detect_and_extract_faces()
+    if motion:
+        human_found = run_object_detection()
 
-    print("\n=== PHASE 4: Face Recognition ===")
-    recognize_faces()
+        if human_found:
+            face_count = detect_and_extract_faces()
 
-    print("\n✅ PIPELINE COMPLETED")
-
-if __name__ == "__main__":
-    run_pipeline()
+            if face_count > 0:
+                recognize_faces()

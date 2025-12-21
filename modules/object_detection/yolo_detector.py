@@ -1,42 +1,76 @@
-# modules/object_detection/yolo_detector.py
-
 import os
 import cv2
+import shutil
 from ultralytics import YOLO
 from core.logger import logger
+from modules.alarm.alarm import trigger_alarm
 
-MODEL_PATH = "models/yolov8/yolov8n.pt"
 ROI_DIR = "data/processed/roi"
-OUTPUT_DIR = "data/processed/detections"
+DET_DIR = "data/processed/detection"
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+CONF_TH = 0.75
 
-model = YOLO(MODEL_PATH)
+# classes we care about explicitly
+ANIMALS = {"cat", "dog", "cow", "horse", "sheep", "bird"}
+
+def ensure_dirs():
+    for d in ["person", "cat", "dog", "cow", "other"]:
+        os.makedirs(os.path.join(DET_DIR, d), exist_ok=True)
 
 def run_object_detection():
-    logger.info("Starting YOLOv8 object detection")
+    ensure_dirs()
+    logger.info("Running Phase 2 – Object Detection")
 
-    for img_name in os.listdir(ROI_DIR):
-        if not img_name.lower().endswith((".jpg", ".png", ".jpeg")):
+    model = YOLO("yolov8n.pt")
+    human_found = False
+
+    for name in os.listdir(ROI_DIR):
+        path = os.path.join(ROI_DIR, name)
+
+        if not os.path.exists(path):
             continue
 
-        img_path = os.path.join(ROI_DIR, img_name)
-        image = cv2.imread(img_path)
-        if image is None:
+        img = cv2.imread(path)
+        if img is None:
             continue
 
-        results = model(image)
+        results = model(img, verbose=False)
+
+        detected_any = False
 
         for r in results:
             for box in r.boxes:
-                cls_id = int(box.cls[0])
-                label = model.names[cls_id]
+                cls = int(box.cls[0])
                 conf = float(box.conf[0])
+                label = model.names[cls]
 
-                if label in ["person", "car", "truck", "animal"] and conf > 0.5:
-                    logger.info(f"Detected {label} ({conf:.2f}) in {img_name}")
+                if conf < CONF_TH:
+                    continue
 
-                    save_path = os.path.join(
-                        OUTPUT_DIR, f"{label}_{img_name}"
-                    )
-                    cv2.imwrite(save_path, image)
+                detected_any = True
+
+                # 🧍 PERSON
+                if label == "person":
+                    save_path = os.path.join(DET_DIR, "person", name)
+                    shutil.copy(path, save_path)
+                    logger.critical(f"🚨 PERSON DETECTED ({conf:.2f}) → {name}")
+                    trigger_alarm(img)
+                    human_found = True
+
+                # 🐕 ANIMALS
+                elif label in ANIMALS:
+                    save_path = os.path.join(DET_DIR, label, name)
+                    shutil.copy(path, save_path)
+                    logger.info(f"Animal detected ({label})")
+
+                # 📦 OTHER OBJECTS
+                else:
+                    save_path = os.path.join(DET_DIR, "other", name)
+                    shutil.copy(path, save_path)
+                    logger.info(f"Object detected ({label})")
+
+        # if YOLO saw nothing at all
+        if not detected_any:
+            shutil.copy(path, os.path.join(DET_DIR, "other", name))
+
+    return human_found

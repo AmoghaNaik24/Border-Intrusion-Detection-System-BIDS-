@@ -2,3 +2,21 @@ numpy
 opencv-python
 imutils
 matplotlib
+
+#cam input frames image saving
+opencv-python
+numpy
+# for YOLOv8 object detection
+ultralytics
+# face recognition
+deepface
+# face detection backend
+mtcnn
+# deepface model
+tensorflow
+# model utilities
+keras
+# cosine similarity
+scikit-learn
+# alarm
+playsound==1.2.2
