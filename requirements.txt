@@ -1,4 +1,9 @@
 numpy
 opencv-python
 imutils
+ultralytics
+deepface
+tf-keras
+skikit-learn
+playsound==1.2.2
 matplotlib
